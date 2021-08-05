@@ -39,6 +39,13 @@ int cycl_pref = 4;      // the fraction of cyclic prefix length (1/x), allowed v
 int PHYmode = 1;        // The PHY mode according to IEEE 802.22, allowed values 1-13
 string message = "Hello Christoph";
 
+    
+// channel parameters
+float noise_floor   = -60.0f;   // noise floor [dB]
+float SNRdB         =  30.0f;   // signal-to-noise ratio [dB]
+float phi           =   2.1f;   // carrier phase offset [radians]
+float dphi          =   0.00f;  // carrier freq offset [radians/sample]
+
 // callback function
 int mycallback(unsigned char *  _header,
                int              _header_valid,
@@ -87,6 +94,10 @@ int main(int argc, char *argv[])
         cout << "PHY mode: " << PHYmode << endl;
         cout << "Cyclic prefix [1/x]: " << cycl_pref << endl;
         cout << "Message: " << message << endl;
+        cout << "noise floor [dB]: " << noise_floor << endl;
+        cout << "SNRdB [dB]: " << SNRdB << endl;
+        cout << "Channel phase [rad]: " << phi << endl;
+        cout << "Carrier freq. offset [rad/samp]: " << dphi << endl;
         cout << endl;
     }
     else if (argc >= 2)
@@ -115,6 +126,30 @@ int main(int argc, char *argv[])
                 message = argv[c];
                 
                 break;
+
+            case 4:
+                cout << "Noise floor [dB]: " << argv[c] << endl;
+                noise_floor = atof(argv[c]);
+
+                break;
+            
+            case 5:
+                cout << "SNRdB: " << argv[c] << endl;
+                SNRdB = atof(argv[c]);
+                
+                break;
+
+            case 6:
+                cout << "Channel phase: " << argv[c] << endl;
+                phi = atof(argv[c]);
+                
+                break;
+
+            case 7:
+                cout << "Carrier freq. offset: " << argv[c] << endl;
+                dphi = atof(argv[c]);
+                
+                break;
                
             }
         }
@@ -132,7 +167,7 @@ int main(int argc, char *argv[])
     // initialize frame generator properties
     ofdmflexframegenprops_s fgprops;
     ofdmflexframegenprops_init_default(&fgprops);
-    fgprops.check = LIQUID_CRC_NONE;
+    fgprops.check = LIQUID_CRC_16;
     fec_scheme used_FEC_scheme = LIQUID_FEC_NONE;
     fgprops.fec1 = LIQUID_FEC_NONE;
     fgprops.mod_scheme = LIQUID_MODEM_PSK2;
@@ -147,7 +182,7 @@ int main(int argc, char *argv[])
     case 3:
             used_FEC_scheme = LIQUID_FEC_CONV_V27;
             fgprops.mod_scheme = LIQUID_MODEM_QPSK;
-            bits_per_symbol = 2*1/2;
+            bits_per_symbol = 2.0f*1.0f/2.0f;
             break;
     case 4:
             used_FEC_scheme = LIQUID_FEC_CONV_V27P23;
@@ -157,52 +192,52 @@ int main(int argc, char *argv[])
     case 5:
             used_FEC_scheme = LIQUID_FEC_CONV_V27P34;
             fgprops.mod_scheme = LIQUID_MODEM_QPSK;
-            bits_per_symbol = 2*3/4;
+            bits_per_symbol = 2.0f*3.0f/4.0f;
             break;
     case 6:
             used_FEC_scheme = LIQUID_FEC_CONV_V27P56;
             fgprops.mod_scheme = LIQUID_MODEM_QPSK;
-            bits_per_symbol = 2*5/6;
+            bits_per_symbol = 2.0f*5.0f/6.0f;
             break;
     case 7:
             used_FEC_scheme = LIQUID_FEC_CONV_V27;
             fgprops.mod_scheme = LIQUID_MODEM_QAM16;
-            bits_per_symbol = 4*1/2;
+            bits_per_symbol = 4.0f*1.0f/2.0f;
             break;
     case 8:
             used_FEC_scheme = LIQUID_FEC_CONV_V27P23;
             fgprops.mod_scheme = LIQUID_MODEM_QAM16;
-            bits_per_symbol = 4*2/3;
+            bits_per_symbol = 4.0f*2.0f/3.0f;
             break;
     case 9:
             used_FEC_scheme = LIQUID_FEC_CONV_V27P34;
             fgprops.mod_scheme = LIQUID_MODEM_QAM16;
-            bits_per_symbol = 4*3/4;
+            bits_per_symbol = 4.0f*3.0f/4.0f;
             break;
     case 10:
             used_FEC_scheme = LIQUID_FEC_CONV_V27P56;
             fgprops.mod_scheme = LIQUID_MODEM_QAM16;
-            bits_per_symbol = 4*5/6;
+            bits_per_symbol = 4.0f*5.0f/6.0f;
             break;
     case 11:
             used_FEC_scheme = LIQUID_FEC_CONV_V27;
             fgprops.mod_scheme = LIQUID_MODEM_QAM64;
-            bits_per_symbol = 6*1/2;
+            bits_per_symbol = 6.0f*1.0f/2.0f;
             break;
     case 12:
             used_FEC_scheme = LIQUID_FEC_CONV_V27P23;
             fgprops.mod_scheme = LIQUID_MODEM_QAM64;
-            bits_per_symbol = 6*2/3;
+            bits_per_symbol = 6.0f*2.0f/3.0f;
             break;
     case 13:
             used_FEC_scheme = LIQUID_FEC_CONV_V27P34;
             fgprops.mod_scheme = LIQUID_MODEM_QAM64;
-            bits_per_symbol = 6*3/4;
+            bits_per_symbol = 6.0f*3.0f/4.0f;
             break;
     case 14:
             used_FEC_scheme = LIQUID_FEC_CONV_V27P56;
             fgprops.mod_scheme = LIQUID_MODEM_QAM64;
-            bits_per_symbol = 6*5/6;
+            bits_per_symbol = 6.0f*5.0f/6.0f;
             break;
     }
 
@@ -223,14 +258,14 @@ int main(int argc, char *argv[])
     cout << "bits per symbol: " << bits_per_symbol << endl;
 
     // length of payload (bytes)
-    unsigned int payload_len = dataCarrier * useful_symbols * bits_per_symbol / 8 - 1; //may be a problem with mixing variable types
+    unsigned int payload_len = dataCarrier * useful_symbols * bits_per_symbol / 8 - 3; //may be a problem with mixing variable types
     unsigned int buffer_len = subCarrier + cp_len; // length of buffer
 
     cout << "Encoded message length: " << fec_get_enc_msg_length(used_FEC_scheme, payload_len);
     cout << endl;
 
     // buffers
-    liquid_float_complex buffer[buffer_len]; // time-domain buffer
+    liquid_float_complex buffer[buffer_len], buffer_out[buffer_len]; // time-domain buffer
     unsigned char header[8];                 // header data
     unsigned char payload[payload_len];      // payload data
     unsigned char p[subCarrier];             // subcarrier allocation (null/pilot/data)
@@ -258,12 +293,7 @@ int main(int argc, char *argv[])
 
     cout << "Subcarrier allocation done." << endl;
 
-    
-    // channel parameters
-    float dphi  = 0.001f;                       // carrier frequency offset
-    float SNRdB = 20.0f;                        // signal-to-noise ratio [dB]
-    float nstd = powf(10.0f, -SNRdB/20.0f); // noise standard deviation
-    float phi = 0.0f;                       // channel phase
+
 
     // create frame synchronizer
     ofdmflexframesync fs = ofdmflexframesync_create(subCarrier, cp_len, taper_len, p, mycallback, NULL);
@@ -278,8 +308,20 @@ int main(int argc, char *argv[])
     header[3] = '0';
     header[4] = '0';
     header[5] = '0';
+    header[6] = '0';
     header[7] = '0';
-    header[8] = '0';
+
+    // create channel object
+    channel_cccf channel = channel_cccf_create();
+
+    // additive white Gauss noise impairment
+    channel_cccf_add_awgn(channel, noise_floor, SNRdB);
+
+    // carrier offset impairments
+    channel_cccf_add_carrier_offset(channel, dphi, phi);
+
+    // print channel internals
+    channel_cccf_print(channel);
 
     // assemble frame
     cout << endl;
@@ -299,16 +341,12 @@ int main(int argc, char *argv[])
        
         cout << last_symbol;
 
-        
-        // // channel impairments
-        // for (i=0; i<buffer_len; i++) {
-        //     buffer[i] = std::exp(z*phi);         // apply carrier offset  --> ue c++ complex definition !!!
-        //     phi += dphi;                        // update carrier phase
-        //     cawgn(&buffer[i], nstd);            // add noise
-        // }
+        // apply channel to input signal
+        channel_cccf_execute_block(channel, buffer, buffer_len, buffer_out);
+
 
         // receive symbol (read samples from buffer)
-        ofdmflexframesync_execute(fs, buffer, buffer_len);
+        ofdmflexframesync_execute(fs, buffer_out, buffer_len);
    }
 
     cout << endl;
@@ -316,11 +354,12 @@ int main(int argc, char *argv[])
     ofdmflexframesync_print(fs);
 
 
-    //Stop streaming
     // destroy the frame generator object
     ofdmflexframegen_destroy(fg);
     // destroy the frame synchroniser
     ofdmflexframesync_destroy(fs);
+    // destroy channel
+    channel_cccf_destroy(channel);
 
     
 

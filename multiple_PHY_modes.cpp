@@ -529,66 +529,65 @@ int main(int argc, char *argv[])
     case 3:
             fgprops.fec0 = LIQUID_FEC_CONV_V27;
             fgprops.mod_scheme = LIQUID_MODEM_QPSK;
-            bits_per_symbol = 2/2;
+            bits_per_symbol = 2.0f/2.0f;
             break;
     case 4:
             fgprops.fec0 = LIQUID_FEC_CONV_V27P23;
             fgprops.mod_scheme = LIQUID_MODEM_QPSK;
-            bits_per_symbol = 2*3/2;
+            bits_per_symbol = 2.0f*3.0f/2.0f;
             break;
     case 5:
             fgprops.fec0 = LIQUID_FEC_CONV_V27P34;
             fgprops.mod_scheme = LIQUID_MODEM_QPSK;
-            bits_per_symbol = 2*4/3;
+            bits_per_symbol = 2.0f*4.0f/3.0f;
             break;
     case 6:
             fgprops.fec0 = LIQUID_FEC_CONV_V27P56;
             fgprops.mod_scheme = LIQUID_MODEM_QPSK;
-            bits_per_symbol = 2*6/5;
+            bits_per_symbol = 2.0f*6.0f/5.0f;
             break;
     case 7:
             fgprops.fec0 = LIQUID_FEC_CONV_V27;
             fgprops.mod_scheme = LIQUID_MODEM_QAM16;
-            bits_per_symbol = 4/2;
+            bits_per_symbol = 4.0f/2.0f;
             break;
     case 8:
             fgprops.fec0 = LIQUID_FEC_CONV_V27P23;
             fgprops.mod_scheme = LIQUID_MODEM_QAM16;
-            bits_per_symbol = 4*3/2;
+            bits_per_symbol = 4.0f*3.0f/2.0f;
             break;
     case 9:
             fgprops.fec0 = LIQUID_FEC_CONV_V27P34;
             fgprops.mod_scheme = LIQUID_MODEM_QAM16;
-            bits_per_symbol = 4*4/3;
+            bits_per_symbol = 4.0f*4.0f/3.0f;
             break;
     case 10:
             fgprops.fec0 = LIQUID_FEC_CONV_V27P56;
             fgprops.mod_scheme = LIQUID_MODEM_QAM16;
-            bits_per_symbol = 4*6/5;
+            bits_per_symbol = 4.0f*6.0f/5.0f;
             break;
     case 11:
             fgprops.fec0 = LIQUID_FEC_CONV_V27;
             fgprops.mod_scheme = LIQUID_MODEM_QAM64;
-            bits_per_symbol = 6/2;
+            bits_per_symbol = 6.0f/2.0f;
             break;
     case 12:
             fgprops.fec0 = LIQUID_FEC_CONV_V27P23;
             fgprops.mod_scheme = LIQUID_MODEM_QAM64;
-            bits_per_symbol = 6*3/2;
+            bits_per_symbol = 6.0f*3.0f/2.0f;
             break;
     case 13:
             fgprops.fec0 = LIQUID_FEC_CONV_V27P34;
             fgprops.mod_scheme = LIQUID_MODEM_QAM64;
-            bits_per_symbol = 6*4/3;
+            bits_per_symbol = 6.0f*4.0f/3.0f;
             break;
     case 14:
             fgprops.fec0 = LIQUID_FEC_CONV_V27P56;
             fgprops.mod_scheme = LIQUID_MODEM_QAM64;
-            bits_per_symbol = 6*6/5;
+            bits_per_symbol = 6.0f*6.0f/5.0f;
             break;
     }
 
-    cout << "FEC and Mode set to case " << PHYmode << endl;
 
     //number of useful symbols in OFDM frame
     int useful_symbols = 22; //for cycl prefix 1/4
@@ -649,10 +648,14 @@ int main(int argc, char *argv[])
     strcpy((char *)payload, message.c_str() );
 
 
-    for ( i = 0; i < 8; i++)
-    {
-        header[i] <= i+1; // counting 1 to 8
-    }
+    header[0] = '0';
+    header[1] = '0';
+    header[2] = '0';
+    header[3] = '0';
+    header[4] = '0';
+    header[5] = '0';
+    header[6] = '0';
+    header[7] = '0';
 
 
     // assemble frame
