@@ -221,15 +221,15 @@ int main(int argc, char *argv[])
     msg << "Sample Rate: " << sampleRate;
     Logger(msg.str());
 
-    int serial_port;
-    char dat;
-    if ((serial_port = serialOpen("/dev/serial0", 57600)) < 0) /* open serial port */
-    {
-        msg.str("");
-        msg << "Unable to open serial device: " << strerror(errno);
-        Logger(msg.str());
-        return 1;
-    }
+    // int serial_port;
+    // char dat;
+    // if ((serial_port = serialOpen("/dev/serial0", 57600)) < 0) /* open serial port */
+    // {
+    //     msg.str("");
+    //     msg << "Unable to open serial device: " << strerror(errno);
+    //     Logger(msg.str());
+    //     return 1;
+    // }
 
     if (wiringPiSetup() == -1) /* initializes wiringPi setup */
     {
@@ -382,19 +382,19 @@ int main(int argc, char *argv[])
     //Wait 12sec and send status LoRa message
     sleep(2);
 
-    if (modeSelector == 0)
-    {
-        msg.str("");
-        msg << "Start Receiving at  " << centerFrequency / 1000000 << " MHz.";
-        serialPuts(serial_port, msg.str().c_str());
-        return 0;
-    }
-    else
-    {
-        msg.str("");
-        msg << "Start transmitting at " << centerFrequency / 1000000 << " MHz.";
-        serialPuts(serial_port, msg.str().c_str());
-    }
+    // if (modeSelector == 0)
+    // {
+    //     msg.str("");
+    //     msg << "Start Receiving at  " << centerFrequency / 1000000 << " MHz.";
+    //     serialPuts(serial_port, msg.str().c_str());
+    //     return 0;
+    // }
+    // else
+    // {
+    //     msg.str("");
+    //     msg << "Start transmitting at " << centerFrequency / 1000000 << " MHz.";
+    //     serialPuts(serial_port, msg.str().c_str());
+    // }
 
     //Streaming Setup
 
@@ -481,10 +481,10 @@ int main(int argc, char *argv[])
         msg.str("");
         msg << "Closed" << endl;
         Logger(msg.str());
-        serialPuts(serial_port, "Stop transmitting.\r");
+        // serialPuts(serial_port, "Stop transmitting.\r");
     }
 
-    serialClose((const int)serial_port);
+    // serialClose((const int)serial_port);
 
     return 0;
 }
