@@ -36,7 +36,7 @@
 #include <chrono>
 #include <math.h>
 #include "liquid/liquid.h"
-
+#include "fec.h"
 
 using namespace std;
 lms_device_t *device = NULL;
@@ -47,19 +47,64 @@ uint8_t setTXwoBP = 0x0B; //all other bit = 0 --> direct path without BP
 uint8_t setTX6m = 0x08;   //all other bit = 0 --> 6m with BP
 uint8_t setTX2m = 0x09;   //all other bit = 0 --> 2m with BP
 uint8_t setTX70cm = 0x0A; //all other bit = 0 --> 70cm with BP
-float centerFrequency = 99.9e6;
+float centerFrequency = 52.8e6;
 string mode = "RX";
 float normalizedGain = 0;
 float modFactor = 0.8f;
 float deviation = 25e3;
 int modeSelector = 1;
-int duration = 10;
+int duration = 30;
 float toneFrequency = 2e3;
-float sampleRate = 2e6;
-
+int subCarrier = 1024;
+int cycl_pref = 4; // the fraction of cyclic prefix length (1/x), allowed values: 4, 8, 16 and 32
+complex<float> j(0,1);
 
 int error();
 void print_gpio(uint8_t gpio_val);
+
+// callback function
+int mycallback(unsigned char *_header,
+               int _header_valid,
+               unsigned char *_payload,
+               unsigned int _payload_len,
+               int _payload_valid,
+               framesyncstats_s _stats,
+               void *_userdata)
+{
+    cout << endl;
+    cout << "***** callback invoked!\n"
+         << endl;
+    cout << "  header " << _header_valid << endl;
+    cout << "   payload " << _payload_valid << endl;
+
+    unsigned int i;
+    if (_header_valid)
+    {
+        cout << "Received header: \n"
+             << endl;
+        for (i = 0; i < 8; i++)
+        {
+            cout << _header[i] << endl;
+        }
+        cout << endl;
+    }
+
+    if (_payload_valid)
+    {
+        cout << "Received payload: \n"
+             << endl;
+        for (i = 0; i < _payload_len; i++)
+        {
+            if (_payload[i] == 0)
+                break;
+            cout << _payload[i] << endl;
+        }
+        cout << endl
+             << endl;
+    }
+
+    return 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -71,7 +116,7 @@ int main(int argc, char *argv[])
         cout << "Deviation: " << deviation << endl;
         cout << "Modulation Factor: " << modFactor << endl;
         cout << "Duration: " << duration << endl;
-        cout << "Sample Rate: " << sampleRate << endl;
+        cout << "Cyclic prefix [1/x]: " << cycl_pref << endl;
         cout << endl;
         cout << "type \033[36m'fm-rx help'\033[0m to see all options !" << endl;
     }
@@ -122,8 +167,8 @@ int main(int argc, char *argv[])
                     cout << "\033[36mDURATION\033[0m:" << endl;
                     cout << "     in sec, number of type int" << endl;
                     cout << endl;
-                    cout << "\033[36mSAMPLE-RATE033[0m:" << endl;
-                    cout << "     in Hz, number of type float" << endl;
+                    cout << "\033[36mCYCLIC-PREFIX\033[0m:" << endl;
+                    cout << "     number (4/8/16/32) of type int" << endl;
                     cout << endl;
                     return 0;
                 }
@@ -153,38 +198,41 @@ int main(int argc, char *argv[])
                 cout << "Duration: " << argv[c] << endl;
                 duration = stoi(argv[c]);
                 break;
-
             case 6:
-                cout << "Sample Rate: " << argv[c] << endl;
-                sampleRate = stof(argv[c]);
+                cout << "Cyclic prefix: " << argv[c] << endl;
+                if (stoi(argv[c]) == 4 ||
+                    stoi(argv[c]) == 8 ||
+                    stoi(argv[c]) == 16 ||
+                    stoi(argv[c]) == 32)
+                    cycl_pref = stoi(argv[c]);
                 break;
             }
         }
     }
 
-    pid_t pid, sid;
-    pid = fork();
-    if (pid < 0)
-    {
-        return 1;
-    }
-    if (pid > 0)
-    {
-        return 1;
-    }
+    // pid_t pid, sid;
+    // pid = fork();
+    // if (pid < 0)
+    // {
+    //     return 1;
+    // }
+    // if (pid > 0)
+    // {
+    //     return 1;
+    // }
 
-    umask(0);
+    // umask(0);
 
-    sid = setsid();
-    if (sid < 0)
-    {
-        return 1;
-    }
+    // sid = setsid();
+    // if (sid < 0)
+    // {
+    //     return 1;
+    // }
 
-    if ((chdir("/")) < 0)
-    {
-        return 1;
-    }
+    // if ((chdir("/")) < 0)
+    // {
+    //     return 1;
+    // }
 
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
@@ -208,8 +256,27 @@ int main(int argc, char *argv[])
     msg << "Duration: " << duration;
     Logger(msg.str());
     msg.str("");
-    msg << "Sample Rate: " << sampleRate;
-    Logger(msg.str());
+
+    //number of useful symbols in OFDM frame
+    int useful_symbols = 22; //for cycl prefix 1/4
+    int sampleRate = 3328000;
+
+    //define number of useful symbols with respect to cyclic prefix
+    switch (cycl_pref)
+    {
+    case 8:
+        useful_symbols = 24;
+        sampleRate = 3225600;
+        break;
+    case 16:
+        useful_symbols = 26;
+        sampleRate = 3264000;
+        break;
+    case 32:
+        useful_symbols = 27;
+        sampleRate = 3273600;
+        break;
+    }
 
     if (wiringPiSetup() == -1) /* initializes wiringPi setup */
     {
@@ -305,10 +372,9 @@ int main(int argc, char *argv[])
     msg << "LimeRFE set to " << mode << endl;
     Logger(msg.str());
 
-    // Send single tone
-    const int tx_time = (const int)duration;
-    float f_ratio = toneFrequency / sampleRate;
-
+    // // Send single tone
+    // const int tx_time = (const int)duration;
+    // float f_ratio = toneFrequency / sampleRate;
 
     //Enable RX channel
     //Channels are numbered starting at 0
@@ -327,18 +393,43 @@ int main(int argc, char *argv[])
     //Streaming Setup
 
     //Initialize stream
-    lms_stream_t streamId; //stream structure
-    streamId.channel = 0; //channel number
-    streamId.fifoSize = 1024 * 1024; //fifo size in samples
-    streamId.throughputVsLatency = 1.0; //optimize for max throughput
-    streamId.isTx = false; //RX channel
-    streamId.dataFmt = lms_stream_t::LMS_FMT_I12; //12-bit integers
+    lms_stream_t streamId;                        //stream structure
+    streamId.channel = 0;                         //channel number
+    streamId.fifoSize = 1024 * 1024;              //fifo size in samples
+    streamId.throughputVsLatency = 1.0;           //optimize for max throughput
+    streamId.isTx = false;                        //RX channel
+    streamId.dataFmt = lms_stream_t::LMS_FMT_F32; //12-bit integers
     if (LMS_SetupStream(device, &streamId) != 0)
         error();
 
     //Initialize data buffers
-    const int sampleCnt = 5000; //complex samples per buffer
-    liquid_float_complex buffer[sampleCnt * 2]; //buffer to hold complex values (2*samples))
+    const int sampleCnt = 1024 + 256;       //complex samples per buffer
+    liquid_float_complex buffer[sampleCnt]; //buffer to hold complex values
+    float receiving_buffer[sampleCnt];
+    unsigned char p[subCarrier];            // subcarrier allocation (null/pilot/data)
+
+    //subcarrier allocation
+    for (int i = 0; i < 1024; i++)
+    {
+        if (i < 232)
+            p[i] = 0; //guard band
+
+        if (231 < i && i < 792)
+            if (i % 7 == 0)
+                p[i] = 1; //every 7th carrier pilot
+            else
+                p[i] = 2; //rest data
+
+        if (i > 791)
+            p[i] = 0; //guard band
+    }
+
+    // define frame parameters
+    unsigned int cp_len = (int)subCarrier / cycl_pref; // cyclic prefix length for 1/4 case
+    unsigned int taper_len = (int)cp_len / 4;          // taper length for 1/4 case
+
+    // create frame synchronizers
+    ofdmflexframesync fs = ofdmflexframesync_create(subCarrier, cp_len, taper_len, p, mycallback, NULL);
 
     //Start streaming
     LMS_StartStream(&streamId);
@@ -346,18 +437,22 @@ int main(int argc, char *argv[])
     //Streaming
     auto t1 = chrono::high_resolution_clock::now();
     auto t2 = t1;
-                                             //Start streaming
-    while (chrono::high_resolution_clock::now() - t1 < chrono::seconds(tx_time)) //run for 10 seconds
+    //Start streaming
+    while (chrono::high_resolution_clock::now() - t1 < chrono::seconds(duration)) //run for 10 seconds
     {
         //Receive samples
-        int samplesRead = LMS_RecvStream(&streamId, buffer, sampleCnt, NULL, 1000);
-	    //I and Q samples are interleaved in buffer: IQIQIQ...
+        int samplesRead = LMS_RecvStream(&streamId, receiving_buffer, sampleCnt, NULL, 1000);
+        //I and Q samples are interleaved in buffer: IQIQIQ...
 
-	    /*
-		    INSERT CODE FOR PROCESSING RECEIVED SAMPLES
-	    */
+        for (int i = 0; i < sampleCnt; i++)
+        {
+            buffer[i]=receiving_buffer[2*i]+j*receiving_buffer[2*i+1];
+        }
 
-        //Print data rate (once per second)
+        // receive symbol (read samples from buffer)
+        ofdmflexframesync_execute(fs, buffer, sampleCnt);
+
+        //Print data rate (once per second#)
         if (chrono::high_resolution_clock::now() - t2 > chrono::seconds(5))
         {
             t2 = chrono::high_resolution_clock::now();
@@ -366,11 +461,18 @@ int main(int argc, char *argv[])
             Logger(msg.str());
         }
     }
-    
+
+    for (int i = 0; i < sampleCnt; i++)
+    {
+        msg.str("");
+        msg << i << ":  " << buffer[i] << endl;
+        Logger(msg.str());
+    }
+
     sleep(1);
 
     //Stop streaming
-    LMS_StopStream(&streamId); //stream is stopped but can be started again with LMS_StartStream()
+    LMS_StopStream(&streamId);            //stream is stopped but can be started again with LMS_StartStream()
     LMS_DestroyStream(device, &streamId); //stream is deallocated and can no longer be used
 
     //Close device

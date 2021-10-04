@@ -1,13 +1,13 @@
 /******************************************************************************
  * C++ source of ofdm-frame
  *
- * File:    ofdm-frame.cpp
+ * File:    multiple_PHY_modes.cpp
  * Authors: Bernhard Isemann
  *          Marek Honek
  *          Christoph Mecklenbräucker
  *
  * Created on 03 Jun 2021, 11:35
- * Updated on 15 Jun 2021, 15:55
+ * Updated on 19 Jun 2021, 15:55
  * Version 1.00
  *****************************************************************************/
 
@@ -37,6 +37,7 @@
 #include "lime/LimeSuite.h"
 #include <chrono>
 #include "liquid/liquid.h"
+#include "fec.h"
 
 
 using namespace std;
@@ -59,6 +60,8 @@ float sampleRate = 1e6;
 int subCarrier = 1024;
 liquid_float_complex complex_i(0,1);
 std::complex <float> z(0,1);
+int cycl_pref = 4;      // the fraction of cyclic prefix length (1/x), allowed values: 4, 8, 16 and 32
+int PHYmode = 1;        // The PHY mode according to IEEE 802.22, allowed values 1-13
 string message = "Hello Christoph";
 
 
@@ -75,31 +78,32 @@ int mycallback(unsigned char *  _header,
                framesyncstats_s _stats,
                void *           _userdata)
 {
-    printf("***** callback invoked!\n");
-    printf("  header (%s)\n",  _header_valid  ? "valid" : "INVALID");
-    printf("  payload (%s)\n", _payload_valid ? "valid" : "INVALID");
+    cout << endl;
+    cout << "***** callback invoked!\n" << endl;
+    cout << "  header " << _header_valid << endl;
+    cout << "   payload " << _payload_valid << endl;
     
     unsigned int i;
     if (_header_valid)
     {
-        printf("Received header: \n");
+        cout << "Received header: \n" << endl;
         for (i = 0; i < 8; i++)
         {
-            printf("%c",_header[i]);
+            cout << _header[i] << endl;
         }
-        printf("\n");
+        cout << endl;
     }
 
     if (_payload_valid)
     {
-        printf("Received payload: \n");
+        cout << "Received payload: \n" << endl;
         for (i = 0; i < _payload_len; i++)
         {
             if (_payload[i] == 0)
                 break;
-            printf("%c",_payload[i]);
+            cout << _payload[i] << endl;
         }
-        printf("\n");
+        cout << endl << endl;
     }
     
     return 0;
@@ -116,10 +120,11 @@ int main(int argc, char *argv[])
         cout << "Number of subcarriers " << subCarrier << endl;
         cout << "Number of data carriers: " << dataCarrier << endl;
         cout << "Duration: " << duration << endl;
-        cout << "Sample Rate: " << sampleRate << endl;
+        cout << "PHY mode: " << PHYmode << endl;
+        cout << "Cyclic prefix [1/x]: " << cycl_pref << endl;
         cout << "Message: " << message << endl;
         cout << endl;
-        cout << "type \033[36m'ofdm-frame help'\033[0m to see all options !" << endl;
+        cout << "type \033[36m'multiple_PHY_modes help'\033[0m to see all options !" << endl;
     }
     else if (argc >= 2)
     {
@@ -161,7 +166,7 @@ int main(int argc, char *argv[])
                 }
                 else if (mode == "help")
                 {
-                    cout << "Options for starting WRAN: ofdm-frame \033[36mMODE CENTER-FREQUENCY GAIN SUBCARRIERS DATA-CARRIERS DURATION SAMPLE-RATE\033[0m" << endl;
+                    cout << "Options for starting WRAN: multiple_PHY_modes \033[36mMODE CENTER-FREQUENCY GAIN SUBCARRIERS DATA-CARRIERS DURATION SAMPLE-RATE\033[0m" << endl;
                     cout << endl;
                     cout << "\033[36mMODE\033[0m:" << endl;
                     cout << "     \033[32mRX\033[0m for receive mode" << endl;
@@ -185,8 +190,11 @@ int main(int argc, char *argv[])
                     cout << "\033[36mDURATION\033[0m:" << endl;
                     cout << "     in sec, number of type int" << endl;
                     cout << endl;
-                    cout << "\033[36mSAMPLE-RATE\033[0m:" << endl;
-                    cout << "     number of type float" << endl;
+                    cout << "\033[36mPHY-MODE\033[0m:" << endl;
+                    cout << "     number (1-13) of type int" << endl;
+                    cout << endl;
+                    cout << "\033[36mCYCLIC-PREFIX\033[0m:" << endl;
+                    cout << "     number (4/8/16/32) of type int" << endl;
                     cout << endl;
                     cout << "\033[36mMESSAGE\033[0m:" << endl;
                     cout << "     string" << endl;
@@ -195,7 +203,7 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    cout << "Wrong settings, please type  \033[36m'ofdm-frame help'\033[0m to see all options !" << endl;
+                    cout << "Wrong settings, please type  \033[36m'multiple_PHY_modes help'\033[0m to see all options !" << endl;
                     return 0;
                 }
                 break;
@@ -226,12 +234,22 @@ int main(int argc, char *argv[])
                 break;
 
             case 7:
-                cout << "Sample Rate: " << argv[c] << endl;
-                sampleRate = stof(argv[c]);
+                cout << "PHY mode: " << argv[c] << endl;
+                if (stoi(argv[c]) > 0 && stoi(argv[c]) < 15)
+                    PHYmode = stoi(argv[c]);
                 break;
             case 8:
+                cout << "Cyclic prefix: " << argv[c] << endl;
+                if (stoi(argv[c]) == 4 ||
+                    stoi(argv[c]) == 8 ||
+                    stoi(argv[c]) == 16 ||
+                    stoi(argv[c]) == 32 )
+                    cycl_pref = stoi(argv[c]);
+                break;
+            case 9:
                 cout << "Payload: " << argv[c] << endl;
                 message = argv[c];
+                break;
             }
         }
     }
@@ -284,7 +302,7 @@ int main(int argc, char *argv[])
     msg << "Duration: " << duration;
     Logger(msg.str());
     msg.str("");
-    msg << "Sample Rate: " << sampleRate;
+    msg << "PHY mode: " << PHYmode;
     Logger(msg.str());
     msg << "Message: " << message;
     Logger(msg.str());
@@ -417,6 +435,26 @@ int main(int argc, char *argv[])
     if (LMS_EnableChannel(device, LMS_CH_TX, 0, true) != 0)
         error();
 
+        
+    //number of useful symbols in OFDM frame and sampling rate for 1/4 cycl pref
+    int useful_symbols = 22; 
+    int sampleRate = 3328000;
+    
+    //define number of useful symbols and sampling rate with respect to cyclic prefix
+    switch(cycl_pref)
+    {
+    case 8:     useful_symbols = 24; 
+                sampleRate = 3225600;
+                break;
+    case 16:    useful_symbols = 26;
+                sampleRate = 3264000;
+                break;
+    case 32:    useful_symbols = 27;
+                sampleRate = 3273600;
+                break;
+    }
+
+
     //Set sample rate
     if (LMS_SetSampleRate(device, sampleRate, 0) != 0)
         error();
@@ -475,14 +513,94 @@ int main(int argc, char *argv[])
 
     int i;
     int l;
-
+    
     // define frame parameters
-    unsigned int cp_len = (int)subCarrier / 4; // cyclic prefix length
+    unsigned int cp_len = (int)subCarrier / cycl_pref; // cyclic prefix length
     unsigned int taper_len = (int)cp_len / 4;  // taper length
 
-    // length of payload (bytes) (480 data carriers, 1b per subcarrier, 14B header length, 26 symbols per frame)
-    unsigned int payload_len = (dataCarrier * 22 / 8);
+    // number of bits per symbol
+    float bits_per_symbol = 1;
+    
+    // initialize frame generator properties
+    ofdmflexframegenprops_s fgprops;
+    ofdmflexframegenprops_init_default(&fgprops);
+    fgprops.check = LIQUID_CRC_NONE;
+    fgprops.fec0 = LIQUID_FEC_NONE;
+    fgprops.fec1 = LIQUID_FEC_NONE;
+    fgprops.mod_scheme = LIQUID_MODEM_PSK2;
+    cout << "FlexFrame properties set." << endl;
+    switch(PHYmode)
+    {
+    case 1:         //presetted
+            break;
+    case 2:
+                    //not supported
+            break;
+    case 3:
+            fgprops.fec0 = LIQUID_FEC_CONV_V27;
+            fgprops.mod_scheme = LIQUID_MODEM_QPSK;
+            bits_per_symbol = 2.0f/2.0f;
+            break;
+    case 4:
+            fgprops.fec0 = LIQUID_FEC_CONV_V27P23;
+            fgprops.mod_scheme = LIQUID_MODEM_QPSK;
+            bits_per_symbol = 2.0f*3.0f/2.0f;
+            break;
+    case 5:
+            fgprops.fec0 = LIQUID_FEC_CONV_V27P34;
+            fgprops.mod_scheme = LIQUID_MODEM_QPSK;
+            bits_per_symbol = 2.0f*4.0f/3.0f;
+            break;
+    case 6:
+            fgprops.fec0 = LIQUID_FEC_CONV_V27P56;
+            fgprops.mod_scheme = LIQUID_MODEM_QPSK;
+            bits_per_symbol = 2.0f*6.0f/5.0f;
+            break;
+    case 7:
+            fgprops.fec0 = LIQUID_FEC_CONV_V27;
+            fgprops.mod_scheme = LIQUID_MODEM_QAM16;
+            bits_per_symbol = 4.0f/2.0f;
+            break;
+    case 8:
+            fgprops.fec0 = LIQUID_FEC_CONV_V27P23;
+            fgprops.mod_scheme = LIQUID_MODEM_QAM16;
+            bits_per_symbol = 4.0f*3.0f/2.0f;
+            break;
+    case 9:
+            fgprops.fec0 = LIQUID_FEC_CONV_V27P34;
+            fgprops.mod_scheme = LIQUID_MODEM_QAM16;
+            bits_per_symbol = 4.0f*4.0f/3.0f;
+            break;
+    case 10:
+            fgprops.fec0 = LIQUID_FEC_CONV_V27P56;
+            fgprops.mod_scheme = LIQUID_MODEM_QAM16;
+            bits_per_symbol = 4.0f*6.0f/5.0f;
+            break;
+    case 11:
+            fgprops.fec0 = LIQUID_FEC_CONV_V27;
+            fgprops.mod_scheme = LIQUID_MODEM_QAM64;
+            bits_per_symbol = 6.0f/2.0f;
+            break;
+    case 12:
+            fgprops.fec0 = LIQUID_FEC_CONV_V27P23;
+            fgprops.mod_scheme = LIQUID_MODEM_QAM64;
+            bits_per_symbol = 6.0f*3.0f/2.0f;
+            break;
+    case 13:
+            fgprops.fec0 = LIQUID_FEC_CONV_V27P34;
+            fgprops.mod_scheme = LIQUID_MODEM_QAM64;
+            bits_per_symbol = 6.0f*4.0f/3.0f;
+            break;
+    case 14:
+            fgprops.fec0 = LIQUID_FEC_CONV_V27P56;
+            fgprops.mod_scheme = LIQUID_MODEM_QAM64;
+            bits_per_symbol = 6.0f*6.0f/5.0f;
+            break;
+    }
+    
 
+    // length of payload (bytes)
+    unsigned int payload_len = floor(dataCarrier * useful_symbols * bits_per_symbol / 8); //may be a problem with mixing variable types
     unsigned int buffer_len = subCarrier + cp_len; // length of buffer
 
     // buffers
@@ -491,13 +609,6 @@ int main(int argc, char *argv[])
     unsigned char payload[payload_len];      // payload data
     unsigned char p[subCarrier];             // subcarrier allocation (null/pilot/data)
 
-    // initialize frame generator properties
-    ofdmflexframegenprops_s fgprops;
-    ofdmflexframegenprops_init_default(&fgprops);
-    fgprops.check = LIQUID_CRC_NONE;
-    fgprops.fec0 = LIQUID_FEC_NONE;
-    fgprops.fec1 = LIQUID_FEC_NONE;
-    fgprops.mod_scheme = LIQUID_MODEM_PSK2;
 
     //subcarrier allocation
     for (i = 0; i < 1024; i++)
@@ -518,8 +629,9 @@ int main(int argc, char *argv[])
 
     // create frame generator
     ofdmflexframegen fg = ofdmflexframegen_create(subCarrier, cp_len, taper_len, p, &fgprops);
-    ofdmflexframegen_print(fg);
 
+    cout << "Subcarrier allocation done." << endl;
+    ofdmflexframegen_print(fg);
     
     // channel parameters
     float dphi  = 0.001f;                       // carrier frequency offset
@@ -532,29 +644,33 @@ int main(int argc, char *argv[])
     
     // ... initialize header/payload ...
     
-    
-    for ( i = 0; i < payload_len; i++)
-    {
-        if (message[i] == 0)
-            continue;
-        else
-            payload[i] = message[i];
-    }
-    
-    
-    for ( i = 0; i < 8; i++)
-    {
-        header[i] <= 255-i%256; // counting 255 down to 248
-    }
+    strcpy((char *)payload, message.c_str() );
+
+
+    header[0] = '0';
+    header[1] = '0';
+    header[2] = '0';
+    header[3] = '0';
+    header[4] = '0';
+    header[5] = '0';
+    header[6] = '0';
+    header[7] = '0';
 
 
     // assemble frame
     ofdmflexframegen_assemble(fg, header, payload, payload_len);
+    cout << endl;
+    ofdmflexframegen_print(fg);
+    cout << endl;
 
     msg.str("");
     int ofdm_frame_len = ofdmflexframegen_getframelen(fg);
     msg << "OFDM frame length: " << ofdm_frame_len << endl;
     Logger(msg.str());
+
+    // setup stream
+    LMS_SetupStream(device, &tx_stream);
+    LMS_StartStream(&tx_stream);
 
     // generate frame
     int last_symbol = 0;
@@ -564,7 +680,20 @@ int main(int argc, char *argv[])
     {
         // generate each OFDM symbol
         last_symbol = ofdmflexframegen_write(fg, buffer, buffer_len);
+        
+        // transmitting the buffer
+        if (last_symbol == 0)
+            int ret = LMS_SendStream(&tx_stream, buffer, buffer_len-1, nullptr, 1000);
 
+        cout << last_symbol;
+
+        // stream status for debugging
+        lms_stream_status_t status;
+        LMS_GetStreamStatus(&tx_stream, &status); //Get stream status
+        msg.str("");
+        msg << "TX data rate: " << status.linkRate / 1e6 << " MB/s\n"; //link data rate
+        Logger(msg.str());
+        
         // // channel impairments
         // for (i=0; i<buffer_len; i++) {
         //     buffer[i] = std::exp(z*phi);         // apply carrier offset  --> ue c++ complex definition !!!
@@ -572,41 +701,15 @@ int main(int argc, char *argv[])
         //     cawgn(&buffer[i], nstd);            // add noise
         // }
 
-        // receive symbol (read samples from buffer)
-        ofdmflexframesync_execute(fs, buffer, buffer_len);
+        // // receive symbol (read samples from buffer)
+        // ofdmflexframesync_execute(fs, buffer, buffer_len);
+   }
 
-    }
+    cout << endl;
 
     ofdmflexframesync_print(fs);
 
-    //Streaming
-    auto t1 = chrono::high_resolution_clock::now();
-    auto t2 = t1;
-    LMS_SetupStream(device, &tx_stream);
-    LMS_StartStream(&tx_stream);                                                  //Start streaming
-    while (chrono::high_resolution_clock::now() - t1 < chrono::seconds(duration)) //run for 10 seconds
-    {
-        //Transmit samples
-        int ret = LMS_SendStream(&tx_stream, buffer, buffer_len-1, nullptr, 1000);
-        if (ret != buffer_len-1)
-        {
-            msg.str("");
-            msg << "error: samples sent: " << ret << "/" << buffer_len-1 << endl;
-            Logger(msg.str());
-        }
 
-        //Print data rate (once per second)
-        if (chrono::high_resolution_clock::now() - t2 > chrono::seconds(5))
-        {
-            t2 = chrono::high_resolution_clock::now();
-            lms_stream_status_t status;
-            LMS_GetStreamStatus(&tx_stream, &status); //Get stream status
-            msg.str("");
-            msg << "TX data rate: " << status.linkRate / 1e6 << " MB/s\n"; //link data rate
-            Logger(msg.str());
-        }
-    }
-    sleep(1);
     //Stop streaming
     // destroy the frame generator object
     ofdmflexframegen_destroy(fg);

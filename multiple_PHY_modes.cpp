@@ -591,7 +591,7 @@ int main(int argc, char *argv[])
 
     //number of useful symbols in OFDM frame
     int useful_symbols = 22; //for cycl prefix 1/4
-    
+        
     //define number of useful symbols with respect to cyclic prefix
     switch(cycl_pref)
     {

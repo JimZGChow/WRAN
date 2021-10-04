@@ -30,7 +30,6 @@ using namespace std;
 
 
 
-int i, l;
 int dataCarrier = 480;
 int subCarrier = 1024;
 liquid_float_complex complex_i(0,1);
@@ -119,6 +118,8 @@ int main(int argc, char *argv[])
                     stoi(argv[c]) == 16 ||
                     stoi(argv[c]) == 32 )
                     cycl_pref = stoi(argv[c]);
+                else
+                    cout << "The allowed values are 4, 8, 16 and 32." << endl;
                 break;
 
             case 3:
@@ -263,7 +264,6 @@ int main(int argc, char *argv[])
 
     cout << "Encoded message length: " << fec_get_enc_msg_length(used_FEC_scheme, payload_len);
     cout << endl;
-
     // buffers
     liquid_float_complex buffer[buffer_len], buffer_out[buffer_len]; // time-domain buffer
     unsigned char header[8];                 // header data
@@ -271,8 +271,9 @@ int main(int argc, char *argv[])
     unsigned char p[subCarrier];             // subcarrier allocation (null/pilot/data)
 
 
+
     //subcarrier allocation
-    for (i = 0; i < 1024; i++)
+    for (int i = 0; i < 1024; i++)
     {
         if (i < 232)
             p[i] = 0; //guard band
@@ -290,10 +291,6 @@ int main(int argc, char *argv[])
 
     // create frame generator
     ofdmflexframegen fg = ofdmflexframegen_create(subCarrier, cp_len, taper_len, p, &fgprops);
-
-    cout << "Subcarrier allocation done." << endl;
-
-
 
     // create frame synchronizer
     ofdmflexframesync fs = ofdmflexframesync_create(subCarrier, cp_len, taper_len, p, mycallback, NULL);
@@ -332,8 +329,12 @@ int main(int argc, char *argv[])
 
     // generate frame
     int last_symbol = 0;
-    i = 0;
-    l = 0;
+
+    //test buffer
+    liquid_float_complex buffer_shifted_1[buffer_len],buffer_shifted_2[buffer_len];
+    liquid_float_complex half_buffer_1[buffer_len/2],half_buffer_2[buffer_len/2];
+    int buffer_shift = 80;
+
     while (!last_symbol)
     {
         // generate each OFDM symbol
@@ -344,9 +345,32 @@ int main(int argc, char *argv[])
         // apply channel to input signal
         channel_cccf_execute_block(channel, buffer, buffer_len, buffer_out);
 
+        
+        //test buffer
+        for (int i=0; i<buffer_len;i++)
+        {
+            if (i<buffer_shift)
+                buffer_shifted_1[i]=buffer_shifted_2[i];
+
+            if (i<buffer_len-buffer_shift)
+            {
+                buffer_shifted_1[i+buffer_shift]=buffer_out[i];
+            }
+            else
+            {
+                buffer_shifted_2[i-buffer_len+buffer_shift]=buffer_out[i];
+            }
+
+            if (i<buffer_len/2)
+                half_buffer_1[i] = buffer_shifted_1[i];
+            else
+                half_buffer_2[i-buffer_len/2] = buffer_shifted_1[i];
+
+        }
 
         // receive symbol (read samples from buffer)
-        ofdmflexframesync_execute(fs, buffer_out, buffer_len);
+        ofdmflexframesync_execute(fs, half_buffer_1, buffer_len/2);
+        ofdmflexframesync_execute(fs, half_buffer_2, buffer_len/2);
    }
 
     cout << endl;
