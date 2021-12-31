@@ -53,60 +53,67 @@ uint8_t setTX70cm = 0x0A; //all other bit = 0 --> 70cm with BP
 float centerFrequency = 52.8e6;
 string mode = "TXwoBP";
 float normalizedGain = 1;
-int dataCarrier = 480;
+// int dataCarrier = 480;
 int modeSelector = 1;
-float sampleRate = 1e6;
-int subCarrier = 1024;
+// float sampleRate = 1e6;
+// int subCarrier = 1024;
 liquid_float_complex complex_i(0,1);
 std::complex <float> z(0,1);
-int cycl_pref = 4;      // the fraction of cyclic prefix length (1/x), allowed values: 4, 8, 16 and 32
-int PHYmode = 1;        // The PHY mode according to IEEE 802.22, allowed values 1-13
+// int cycl_pref = 4;      // the fraction of cyclic prefix length (1/x), allowed values: 4, 8, 16 and 32
+// int PHYmode = 1;        // The PHY mode according to IEEE 802.22, allowed values 1-13
 string message = "Hello Christoph";
 
+// FSK
+unsigned int sym_rate     = 2000; //250000
+unsigned int bits_per_sym = 8;                  // number of bits/symbol
+// unsigned int samp_per_sym = 2 << bits_per_sym;
+unsigned int Csamp_per_sym = 1000;
+float        bandwidth    = 0.20;               // frequency spacing
+unsigned int RsampleRate   = 25e5;
 
 int error();
 void print_gpio(uint8_t gpio_val);
 
 
-// callback function
-int mycallback(unsigned char *  _header,
-               int              _header_valid,
-               unsigned char *  _payload,
-               unsigned int     _payload_len,
-               int              _payload_valid,
-               framesyncstats_s _stats,
-               void *           _userdata)
-{
-    cout << endl;
-    cout << "***** callback invoked!\n" << endl;
-    cout << "  header " << _header_valid << endl;
-    cout << "   payload " << _payload_valid << endl;
+// // callback function
+// int mycallback(unsigned char *  _header,
+//                int              _header_valid,
+//                unsigned char *  _payload,
+//                unsigned int     _payload_len,
+//                int              _payload_valid,
+//                framesyncstats_s _stats,
+//                void *           _userdata)
+// {
+//     cout << endl;
+//     cout << "***** callback invoked!\n" << endl;
+//     cout << "  header " << _header_valid << endl;
+//     cout << "   payload " << _payload_valid << endl;
     
-    unsigned int i;
-    if (_header_valid)
-    {
-        cout << "Received header: \n" << endl;
-        for (i = 0; i < 8; i++)
-        {
-            cout << _header[i] << endl;
-        }
-        cout << endl;
-    }
+//     unsigned int i;
+//     if (_header_valid)
+//     {
+//         cout << "Received header: \n" << endl;
+//         for (i = 0; i < 8; i++)
+//         {
+//             cout << _header[i] << endl;
+//         }
+//         cout << endl;
+//     }
 
-    if (_payload_valid)
-    {
-        cout << "Received payload: \n" << endl;
-        for (i = 0; i < _payload_len; i++)
-        {
-            if (_payload[i] == 0)
-                break;
-            cout << _payload[i] << endl;
-        }
-        cout << endl << endl;
-    }
+//     if (_payload_valid)
+//     {
+//         cout << "Received payload: \n" << endl;
+//         for (i = 0; i < _payload_len; i++)
+//         {
+//             if (_payload[i] == 0)
+//                 break;
+//             cout << _payload[i] << endl;
+//         }
+//         cout << endl << endl;
+//     }
     
-    return 0;
-}
+//     return 0;
+// }
 
 int main(int argc, char *argv[])
 {
@@ -116,10 +123,10 @@ int main(int argc, char *argv[])
         cout << "Mode: " << mode << endl;
         cout << "Frequency: " << centerFrequency << endl;
         cout << "Gain: " << normalizedGain << endl;
-        cout << "Number of subcarriers " << subCarrier << endl;
-        cout << "Number of data carriers: " << dataCarrier << endl;
-        cout << "PHY mode: " << PHYmode << endl;
-        cout << "Cyclic prefix [1/x]: " << cycl_pref << endl;
+        // cout << "Number of subcarriers " << subCarrier << endl;
+        // cout << "Number of data carriers: " << dataCarrier << endl;
+        // cout << "PHY mode: " << PHYmode << endl;
+        // cout << "Cyclic prefix [1/x]: " << cycl_pref << endl;
         cout << "Message: " << message << endl;
         cout << endl;
         cout << "type \033[36m'multiple_PHY_modes help'\033[0m to see all options !" << endl;
@@ -214,29 +221,29 @@ int main(int argc, char *argv[])
                 break;
 
             case 4:
-                cout << "Subcarriers: " << argv[c] << endl;
-                subCarrier = stof(argv[c]);
-                break;
+            //     cout << "Subcarriers: " << argv[c] << endl;
+            //     subCarrier = stof(argv[c]);
+            //     break;
 
-            case 5:
-                cout << "Data Carriers: " << argv[c] << endl;
-                dataCarrier = stof(argv[c]);
-                break;
+            // case 5:
+            //     cout << "Data Carriers: " << argv[c] << endl;
+            //     dataCarrier = stof(argv[c]);
+            //     break;
 
-            case 6:
-                cout << "PHY mode: " << argv[c] << endl;
-                if (stoi(argv[c]) > 0 && stoi(argv[c]) < 15)
-                    PHYmode = stoi(argv[c]);
-                break;
-            case 7:
-                cout << "Cyclic prefix: " << argv[c] << endl;
-                if (stoi(argv[c]) == 4 ||
-                    stoi(argv[c]) == 8 ||
-                    stoi(argv[c]) == 16 ||
-                    stoi(argv[c]) == 32 )
-                    cycl_pref = stoi(argv[c]);
-                break;
-            case 8:
+            // case 6:
+            //     cout << "PHY mode: " << argv[c] << endl;
+            //     if (stoi(argv[c]) > 0 && stoi(argv[c]) < 15)
+            //         PHYmode = stoi(argv[c]);
+            //     break;
+            // case 7:
+            //     cout << "Cyclic prefix: " << argv[c] << endl;
+            //     if (stoi(argv[c]) == 4 ||
+            //         stoi(argv[c]) == 8 ||
+            //         stoi(argv[c]) == 16 ||
+            //         stoi(argv[c]) == 32 )
+            //         cycl_pref = stoi(argv[c]);
+            //     break;
+            // case 8:
                 cout << "Payload: " << argv[c] << endl;
                 message = argv[c];
                 break;
@@ -281,15 +288,15 @@ int main(int argc, char *argv[])
     Logger(msg.str());
     msg.str("");
     msg << "Gain: " << normalizedGain;
-    Logger(msg.str());
-    msg.str("");
-    msg << "<Subcarriers>: " << subCarrier;
-    Logger(msg.str());
-    msg.str("");
-    msg << "Data Carriers: " << dataCarrier;
-    Logger(msg.str());
-    msg.str("");
-    msg << "PHY mode: " << PHYmode;
+    // Logger(msg.str());
+    // msg.str("");
+    // msg << "<Subcarriers>: " << subCarrier;
+    // Logger(msg.str());
+    // msg.str("");
+    // msg << "Data Carriers: " << dataCarrier;
+    // Logger(msg.str());
+    // msg.str("");
+    // msg << "PHY mode: " << PHYmode;
     Logger(msg.str());
     msg << "Message: " << message;
     Logger(msg.str());
@@ -423,30 +430,30 @@ int main(int argc, char *argv[])
         error();
 
         
-    //number of useful symbols in OFDM frame and sampling rate for 1/4 cycl pref
-    int useful_symbols = 22; 
-    int sampleRate = 3328000;
+    // //number of useful symbols in OFDM frame and sampling rate for 1/4 cycl pref
+    // int useful_symbols = 22; 
+    // int sampleRate = 3328000;
     
-    //define number of useful symbols and sampling rate with respect to cyclic prefix
-    switch(cycl_pref)
-    {
-    case 8:     useful_symbols = 24; 
-                sampleRate = 3225600;
-                break;
-    case 16:    useful_symbols = 26;
-                sampleRate = 3264000;
-                break;
-    case 32:    useful_symbols = 27;
-                sampleRate = 3273600;
-                break;
-    }
+    // // define number of useful symbols and sampling rate with respect to cyclic prefix
+    // switch(cycl_pref)
+    // {
+    // case 8:     useful_symbols = 24; 
+    //             sampleRate = 3225600;
+    //             break;
+    // case 16:    useful_symbols = 26;
+    //             sampleRate = 3264000;
+    //             break;
+    // case 32:    useful_symbols = 27;
+    //             sampleRate = 3273600;
+    //             break;
+    // }
 
 
     //Set sample rate
-    if (LMS_SetSampleRate(device, sampleRate, 0) != 0)
+    if (LMS_SetSampleRate(device, RsampleRate, 0) != 0)
         error();
     msg.str("");
-    msg << "Sample rate: " << sampleRate / 1e6 << " MHz" << endl;
+    msg << "Sample rate: " << RsampleRate / 1e6 << " MHz" << endl;
     Logger(msg.str());
 
     //Set center frequency
@@ -465,7 +472,7 @@ int main(int argc, char *argv[])
         error();
 
     //calibrate Tx, continue on failure
-    LMS_Calibrate(device, LMS_CH_TX, 0, sampleRate, 0);
+    LMS_Calibrate(device, LMS_CH_TX, 0, RsampleRate, 0);
 
     //Wait 2sec and send status LoRa message
     sleep(2);
@@ -501,206 +508,238 @@ int main(int argc, char *argv[])
     int i;
     int l;
     
-    // define frame parameters
-    unsigned int cp_len = (int)subCarrier / cycl_pref; // cyclic prefix length
-    unsigned int taper_len = (int)cp_len / 4;  // taper length
+    // // define frame parameters
+    // unsigned int cp_len = (int)subCarrier / cycl_pref; // cyclic prefix length
+    // unsigned int taper_len = (int)cp_len / 4;  // taper length
 
-    // number of bits per symbol
-    float bits_per_symbol = 1;
+    // // number of bits per symbol
+    // float bits_per_symbol = 1;
     
-    // initialize frame generator properties
-    ofdmflexframegenprops_s fgprops;
-    ofdmflexframegenprops_init_default(&fgprops);
-    fgprops.check = LIQUID_CRC_NONE;
-    fgprops.fec0 = LIQUID_FEC_NONE;
-    fgprops.fec1 = LIQUID_FEC_NONE;
-    fgprops.mod_scheme = LIQUID_MODEM_PSK2;
-    cout << "FlexFrame properties set." << endl;
-    switch(PHYmode)
-    {
-    case 1:         //presetted
-            break;
-    case 2:
-                    //not supported
-            break;
-    case 3:
-            fgprops.fec0 = LIQUID_FEC_CONV_V27;
-            fgprops.mod_scheme = LIQUID_MODEM_QPSK;
-            bits_per_symbol = 2.0f/2.0f;
-            break;
-    case 4:
-            fgprops.fec0 = LIQUID_FEC_CONV_V27P23;
-            fgprops.mod_scheme = LIQUID_MODEM_QPSK;
-            bits_per_symbol = 2.0f*3.0f/2.0f;
-            break;
-    case 5:
-            fgprops.fec0 = LIQUID_FEC_CONV_V27P34;
-            fgprops.mod_scheme = LIQUID_MODEM_QPSK;
-            bits_per_symbol = 2.0f*4.0f/3.0f;
-            break;
-    case 6:
-            fgprops.fec0 = LIQUID_FEC_CONV_V27P56;
-            fgprops.mod_scheme = LIQUID_MODEM_QPSK;
-            bits_per_symbol = 2.0f*6.0f/5.0f;
-            break;
-    case 7:
-            fgprops.fec0 = LIQUID_FEC_CONV_V27;
-            fgprops.mod_scheme = LIQUID_MODEM_QAM16;
-            bits_per_symbol = 4.0f/2.0f;
-            break;
-    case 8:
-            fgprops.fec0 = LIQUID_FEC_CONV_V27P23;
-            fgprops.mod_scheme = LIQUID_MODEM_QAM16;
-            bits_per_symbol = 4.0f*3.0f/2.0f;
-            break;
-    case 9:
-            fgprops.fec0 = LIQUID_FEC_CONV_V27P34;
-            fgprops.mod_scheme = LIQUID_MODEM_QAM16;
-            bits_per_symbol = 4.0f*4.0f/3.0f;
-            break;
-    case 10:
-            fgprops.fec0 = LIQUID_FEC_CONV_V27P56;
-            fgprops.mod_scheme = LIQUID_MODEM_QAM16;
-            bits_per_symbol = 4.0f*6.0f/5.0f;
-            break;
-    case 11:
-            fgprops.fec0 = LIQUID_FEC_CONV_V27;
-            fgprops.mod_scheme = LIQUID_MODEM_QAM64;
-            bits_per_symbol = 6.0f/2.0f;
-            break;
-    case 12:
-            fgprops.fec0 = LIQUID_FEC_CONV_V27P23;
-            fgprops.mod_scheme = LIQUID_MODEM_QAM64;
-            bits_per_symbol = 6.0f*3.0f/2.0f;
-            break;
-    case 13:
-            fgprops.fec0 = LIQUID_FEC_CONV_V27P34;
-            fgprops.mod_scheme = LIQUID_MODEM_QAM64;
-            bits_per_symbol = 6.0f*4.0f/3.0f;
-            break;
-    case 14:
-            fgprops.fec0 = LIQUID_FEC_CONV_V27P56;
-            fgprops.mod_scheme = LIQUID_MODEM_QAM64;
-            bits_per_symbol = 6.0f*6.0f/5.0f;
-            break;
-    }
+    // // initialize frame generator properties
+    // ofdmflexframegenprops_s fgprops;
+    // ofdmflexframegenprops_init_default(&fgprops);
+    // fgprops.check = LIQUID_CRC_NONE;
+    // fgprops.fec0 = LIQUID_FEC_NONE;
+    // fgprops.fec1 = LIQUID_FEC_NONE;
+    // fgprops.mod_scheme = LIQUID_MODEM_PSK2;
+    // cout << "FlexFrame properties set." << endl;
+    // switch(PHYmode)
+    // {
+    // case 1:         //presetted
+    //         break;
+    // case 2:
+    //                 //not supported
+    //         break;
+    // case 3:
+    //         fgprops.fec0 = LIQUID_FEC_CONV_V27;
+    //         fgprops.mod_scheme = LIQUID_MODEM_QPSK;
+    //         bits_per_symbol = 2.0f/2.0f;
+    //         break;
+    // case 4:
+    //         fgprops.fec0 = LIQUID_FEC_CONV_V27P23;
+    //         fgprops.mod_scheme = LIQUID_MODEM_QPSK;
+    //         bits_per_symbol = 2.0f*3.0f/2.0f;
+    //         break;
+    // case 5:
+    //         fgprops.fec0 = LIQUID_FEC_CONV_V27P34;
+    //         fgprops.mod_scheme = LIQUID_MODEM_QPSK;
+    //         bits_per_symbol = 2.0f*4.0f/3.0f;
+    //         break;
+    // case 6:
+    //         fgprops.fec0 = LIQUID_FEC_CONV_V27P56;
+    //         fgprops.mod_scheme = LIQUID_MODEM_QPSK;
+    //         bits_per_symbol = 2.0f*6.0f/5.0f;
+    //         break;
+    // case 7:
+    //         fgprops.fec0 = LIQUID_FEC_CONV_V27;
+    //         fgprops.mod_scheme = LIQUID_MODEM_QAM16;
+    //         bits_per_symbol = 4.0f/2.0f;
+    //         break;
+    // case 8:
+    //         fgprops.fec0 = LIQUID_FEC_CONV_V27P23;
+    //         fgprops.mod_scheme = LIQUID_MODEM_QAM16;
+    //         bits_per_symbol = 4.0f*3.0f/2.0f;
+    //         break;
+    // case 9:
+    //         fgprops.fec0 = LIQUID_FEC_CONV_V27P34;
+    //         fgprops.mod_scheme = LIQUID_MODEM_QAM16;
+    //         bits_per_symbol = 4.0f*4.0f/3.0f;
+    //         break;
+    // case 10:
+    //         fgprops.fec0 = LIQUID_FEC_CONV_V27P56;
+    //         fgprops.mod_scheme = LIQUID_MODEM_QAM16;
+    //         bits_per_symbol = 4.0f*6.0f/5.0f;
+    //         break;
+    // case 11:
+    //         fgprops.fec0 = LIQUID_FEC_CONV_V27;
+    //         fgprops.mod_scheme = LIQUID_MODEM_QAM64;
+    //         bits_per_symbol = 6.0f/2.0f;
+    //         break;
+    // case 12:
+    //         fgprops.fec0 = LIQUID_FEC_CONV_V27P23;
+    //         fgprops.mod_scheme = LIQUID_MODEM_QAM64;
+    //         bits_per_symbol = 6.0f*3.0f/2.0f;
+    //         break;
+    // case 13:
+    //         fgprops.fec0 = LIQUID_FEC_CONV_V27P34;
+    //         fgprops.mod_scheme = LIQUID_MODEM_QAM64;
+    //         bits_per_symbol = 6.0f*4.0f/3.0f;
+    //         break;
+    // case 14:
+    //         fgprops.fec0 = LIQUID_FEC_CONV_V27P56;
+    //         fgprops.mod_scheme = LIQUID_MODEM_QAM64;
+    //         bits_per_symbol = 6.0f*6.0f/5.0f;
+    //         break;
+    // }
     
 
-    // length of payload (bytes)
-    unsigned int payload_len = floor(dataCarrier * useful_symbols * bits_per_symbol / 8); //may be a problem with mixing variable types
-    unsigned int buffer_len = subCarrier + cp_len; // length of buffer
+    // // length of payload (bytes)
+    // unsigned int payload_len = floor(dataCarrier * useful_symbols * bits_per_symbol / 8); //may be a problem with mixing variable types
+    // unsigned int buffer_len = subCarrier + cp_len; // length of buffer
 
-    // buffers
-    liquid_float_complex buffer[buffer_len]; // time-domain buffer
-    unsigned char header[8];                 // header data
-    unsigned char payload[payload_len];      // payload data
-    unsigned char p[subCarrier];             // subcarrier allocation (null/pilot/data)
+    // // buffers
+    // liquid_float_complex buffer[buffer_len]; // time-domain buffer
+    // unsigned char header[8];                 // header data
+    // unsigned char payload[payload_len];      // payload data
+    // unsigned char p[subCarrier];             // subcarrier allocation (null/pilot/data)
+    liquid_float_complex buffer[Csamp_per_sym];    // transmit buffer FSK
+    float buffer_real[2*Csamp_per_sym];
 
 
-    //subcarrier allocation
-    for (i = 0; i < 1024; i++)
-    {
-        if (i < 232)
-            p[i] = 0; //guard band
+    // //subcarrier allocation
+    // for (i = 0; i < 1024; i++)
+    // {
+    //     if (i < 232)
+    //         p[i] = 0; //guard band
 
-        if (231 < i && i < 792)
-            if (i % 7 == 0)
-                p[i] = 1; //every 7th carrier pilot
-            else
-                p[i] = 2; //rest data
+    //     if (231 < i && i < 792)
+    //         if (i % 7 == 0)
+    //             p[i] = 1; //every 7th carrier pilot
+    //         else
+    //             p[i] = 2; //rest data
 
-        if (i > 791)
-            p[i] = 0; //guard band
+    //     if (i > 791)
+    //         p[i] = 0; //guard band
 
-    }
+    // }
 
-    // create frame generator
-    ofdmflexframegen fg = ofdmflexframegen_create(subCarrier, cp_len, taper_len, p, &fgprops);
+    // // create frame generator
+    // ofdmflexframegen fg = ofdmflexframegen_create(subCarrier, cp_len, taper_len, p, &fgprops);
+    fskmod mod = fskmod_create(bits_per_sym,Csamp_per_sym,bandwidth);
 
-    cout << "Subcarrier allocation done." << endl;
-    ofdmflexframegen_print(fg);
+    // cout << "Subcarrier allocation done." << endl;
+    // ofdmflexframegen_print(fg);
     
-    // channel parameters
-    float dphi  = 0.001f;                       // carrier frequency offset
-    float SNRdB = 20.0f;                        // signal-to-noise ratio [dB]
-    float nstd = powf(10.0f, -SNRdB/20.0f); // noise standard deviation
-    float phi = 0.0f;                       // channel phase
+    // // channel parameters
+    // float dphi  = 0.001f;                       // carrier frequency offset
+    // float SNRdB = 20.0f;                        // signal-to-noise ratio [dB]
+    // float nstd = powf(10.0f, -SNRdB/20.0f); // noise standard deviation
+    // float phi = 0.0f;                       // channel phase
 
-    // create frame synchronizer
+    // // create frame synchronizer
     // ofdmflexframesync fs = ofdmflexframesync_create(subCarrier, cp_len, taper_len, p, mycallback, NULL);
+    fskdem dem = fskdem_create(bits_per_sym,Csamp_per_sym,bandwidth);
     
-    // ... initialize header/payload ...
+    // // ... initialize header/payload ...
     
-    strcpy((char *)payload, message.c_str() );
+    // strcpy((char *)payload, message.c_str() );
 
 
-    header[0] = '0';
-    header[1] = '0';
-    header[2] = '0';
-    header[3] = '0';
-    header[4] = '0';
-    header[5] = '0';
-    header[6] = '0';
-    header[7] = '0';
+    // header[0] = '0';
+    // header[1] = '0';
+    // header[2] = '0';
+    // header[3] = '0';
+    // header[4] = '0';
+    // header[5] = '0';
+    // header[6] = '0';
+    // header[7] = '0';
 
 
     // assemble frame
-    ofdmflexframegen_assemble(fg, header, payload, payload_len);
-    cout << endl;
-    ofdmflexframegen_print(fg);
-    cout << endl;
+    // ofdmflexframegen_assemble(fg, header, payload, payload_len);
+    // cout << endl;
+    // ofdmflexframegen_print(fg);
+    // cout << endl;
 
-    msg.str("");
-    int ofdm_frame_len = ofdmflexframegen_getframelen(fg);
-    msg << "OFDM frame length: " << ofdm_frame_len << endl;
-    Logger(msg.str());
+    // msg.str("");
+    // int ofdm_frame_len = ofdmflexframegen_getframelen(fg);
+    // msg << "OFDM frame length: " << ofdm_frame_len << endl;
+    // Logger(msg.str());
 
     // setup stream
     LMS_SetupStream(device, &tx_stream);
-    LMS_StartStream(&tx_stream);
+    
 
     // generate frame
-    int last_symbol = 0;
+    // int last_symbol = 0;
     i = 0;
     l = 0;
-    while (!last_symbol)
+    
+    // generate each OFDM symbol
+    // last_symbol = ofdmflexframegen_write(fg, buffer, buffer_len);
+    
+    uint8_t pattern[]   =   {0x7E,0x01,0x02,0x04,0x08,0x10,0x20,0x7E};
+
+    LMS_StartStream(&tx_stream);
+
+    for (i = 0; i < 10000; i++)
     {
-        // generate each OFDM symbol
-        last_symbol = ofdmflexframegen_write(fg, buffer, buffer_len);
-        
-        // transmitting the buffer
-        if (last_symbol == 0)
-            int ret = LMS_SendStream(&tx_stream, buffer, buffer_len, nullptr, 1000);
-
-        cout << last_symbol;
-
-        // stream status for debugging
-        lms_stream_status_t status;
-        LMS_GetStreamStatus(&tx_stream, &status); //Get stream status
-        msg.str("");
-        msg << "TX data rate: " << status.linkRate << " B/s\n"; //link data rate
-        Logger(msg.str());
-        
-        // // channel impairments
-        // for (i=0; i<buffer_len; i++) {
-        //     buffer[i] = std::exp(z*phi);         // apply carrier offset  --> ue c++ complex definition !!!
-        //     phi += dphi;                        // update carrier phase
-        //     cawgn(&buffer[i], nstd);            // add noise
+        unsigned int sym_in = pattern[i%8]; //repetitive sending 01111110
+        fskmod_modulate(mod, sym_in, buffer);
+        for (l = 0; l < Csamp_per_sym; l++)
+        {
+            buffer_real[2*l] = buffer[l].real();
+            buffer_real[2*l+1] = buffer[l].imag();
+        }
+        if (i<24)
+        {
+            cout << "tx symbol: " << sym_in << endl;
+        }
+      
+        // for (l=0;l<samp_per_sym;l++)
+        // {
+        //     cout << "buffer " << l << ": " << buffer[l] << endl;
         // }
+                
+    //    for (l=0;l<samp_per_sym;l++)
+    //     {
+    //         cout << "buffer_real (real)" << l << ": " << buffer_real[2*l] << endl << "buffer_real (imag)" << l << ": " << buffer_real[2*l+1] << endl;
+    //     }
+        
 
+        // transmitting the buffer
+        int ret = LMS_SendStream(&tx_stream, buffer_real, 2*Csamp_per_sym, nullptr, 1000);
+
+        // cout << "transmission return: " << ret << endl;
+
+        if (i%100==0)
+        {
+            // stream status for debugging
+            lms_stream_status_t status;
+            LMS_GetStreamStatus(&tx_stream, &status); //Get stream status
+            msg.str("");
+            msg << "TX data rate: " << status.linkRate << " S/s\n"; //link data rate
+            cout << i << ": TX data rate: " << status.linkRate << " S/s\n"; //link data rate
+            Logger(msg.str());
+        }
+
+       
         // // receive symbol (read samples from buffer)
         // ofdmflexframesync_execute(fs, buffer, buffer_len);
-   }
+        // unsigned int sym_out = fskdem_demodulate(dem, buffer);
 
+        // cout << "buffer: "<< buffer << "     symbol: "<< sym_out << endl;
+    }
+    
     cout << endl;
 
     // ofdmflexframesync_print(fs);
 
 
-    //Stop streaming
-    // destroy the frame generator object
-    ofdmflexframegen_destroy(fg);
-    // destroy the frame synchroniser
+    // //Stop streaming
+    // // destroy the frame generator object
+    // ofdmflexframegen_destroy(fg);
+    // // destroy the frame synchroniser
     // ofdmflexframesync_destroy(fs);
 
     LMS_StopStream(&tx_stream);

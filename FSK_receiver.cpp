@@ -55,54 +55,64 @@ int duration = 30;
 float toneFrequency = 2e3;
 int subCarrier = 1024;
 int cycl_pref = 4; // the fraction of cyclic prefix length (1/x), allowed values: 4, 8, 16 and 32
+liquid_float_complex complex_i(0,1);
 complex<float> j(0,1);
+
+// FSK
+unsigned int sym_rate     = 2000;
+unsigned int bits_per_sym = 8;                  // number of bits/symbol
+// unsigned int Csamp_per_sym = 2 << bits_per_sym;
+unsigned int Csamp_per_sym = 1000;
+float        bandwidth    = 0.20;               // frequency spacing
+unsigned int sampleRate   = 25e5;
+
 
 int error();
 void print_gpio(uint8_t gpio_val);
 
-// callback function
-int mycallback(unsigned char *_header,
-               int _header_valid,
-               unsigned char *_payload,
-               unsigned int _payload_len,
-               int _payload_valid,
-               framesyncstats_s _stats,
-               void *_userdata)
-{
-    cout << endl;
-    cout << "***** callback invoked!\n"
-         << endl;
-    cout << "  header " << _header_valid << endl;
-    cout << "   payload " << _payload_valid << endl;
+// // callback function
+// int mycallback(unsigned char *_header,
+//                int _header_valid,
+//                unsigned char *_payload,
+//                unsigned int _payload_len,
+//                int _payload_valid,
+//                framesyncstats_s _stats,
+//                void *_userdata)
+// {
+//     cout << endl;
+//     cout << "***** callback invoked!\n"
+//          << endl;
+//     cout << "  header " << _header_valid << endl;
+//     cout << "   payload " << _payload_valid << endl;
 
-    unsigned int i;
-    if (_header_valid)
-    {
-        cout << "Received header: \n"
-             << endl;
-        for (i = 0; i < 8; i++)
-        {
-            cout << _header[i] << endl;
-        }
-        cout << endl;
-    }
+//     unsigned int i;
+//     if (_header_valid)
+//     {
+//         cout << "Received header: \n"
+//              << endl;
+//         for (i = 0; i < 8; i++)
+//         {
+//             cout << _header[i] << endl;
+//         }
+//         cout << endl;
+//     }
 
-    if (_payload_valid)
-    {
-        cout << "Received payload: \n"
-             << endl;
-        for (i = 0; i < _payload_len; i++)
-        {
-            if (_payload[i] == 0)
-                break;
-            cout << _payload[i] << endl;
-        }
-        cout << endl
-             << endl;
-    }
+//     if (_payload_valid)
+//     {
+//         cout << "Received payload: \n"
+//              << endl;
+//         for (i = 0; i < _payload_len; i++)
+//         {
+//             if (_payload[i] == 0)
+//                 break;
+//             cout << _payload[i] << endl;
+//         }
+//         cout << endl
+//              << endl;
+//     }
 
-    return 0;
-}
+//     return 0;
+// }
 
 int main(int argc, char *argv[])
 {
@@ -112,7 +122,7 @@ int main(int argc, char *argv[])
         cout << "Mode: " << mode << endl;
         cout << "Frequency: " << centerFrequency << endl;
         cout << "Duration: " << duration << endl;
-        cout << "Cyclic prefix [1/x]: " << cycl_pref << endl;
+        // cout << "Cyclic prefix [1/x]: " << cycl_pref << endl;
         cout << endl;
         cout << "type \033[36m'fm-rx help'\033[0m to see all options !" << endl;
     }
@@ -178,14 +188,14 @@ int main(int argc, char *argv[])
                 cout << "Duration: " << argv[c] << endl;
                 duration = stoi(argv[c]);
                 break;
-            case 4:
-                cout << "Cyclic prefix: " << argv[c] << endl;
-                if (stoi(argv[c]) == 4 ||
-                    stoi(argv[c]) == 8 ||
-                    stoi(argv[c]) == 16 ||
-                    stoi(argv[c]) == 32)
-                    cycl_pref = stoi(argv[c]);
-                break;
+            // case 4:
+            //     cout << "Cyclic prefix: " << argv[c] << endl;
+            //     if (stoi(argv[c]) == 4 ||
+            //         stoi(argv[c]) == 8 ||
+            //         stoi(argv[c]) == 16 ||
+            //         stoi(argv[c]) == 32)
+            //         cycl_pref = stoi(argv[c]);
+            //     break;
             }
         }
     }
@@ -214,9 +224,9 @@ int main(int argc, char *argv[])
     //     return 1;
     // }
 
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);
+    // close(STDIN_FILENO);
+    // close(STDOUT_FILENO);
+    // close(STDERR_FILENO);
 
     LogInit();
     Logger("RPX-100 was started succesfully with following settings:");
@@ -231,26 +241,26 @@ int main(int argc, char *argv[])
     Logger(msg.str());
     msg.str("");
 
-    //number of useful symbols in OFDM frame
-    int useful_symbols = 22; //for cycl prefix 1/4
-    int sampleRate = 3328000;
+    // //number of useful symbols in OFDM frame
+    // int useful_symbols = 22; //for cycl prefix 1/4
+    // int sampleRate = 3328000;
 
-    //define number of useful symbols with respect to cyclic prefix
-    switch (cycl_pref)
-    {
-    case 8:
-        useful_symbols = 24;
-        sampleRate = 3225600;
-        break;
-    case 16:
-        useful_symbols = 26;
-        sampleRate = 3264000;
-        break;
-    case 32:
-        useful_symbols = 27;
-        sampleRate = 3273600;
-        break;
-    }
+    // //define number of useful symbols with respect to cyclic prefix
+    // switch (cycl_pref)
+    // {
+    // case 8:
+    //     useful_symbols = 24;
+    //     sampleRate = 3225600;
+    //     break;
+    // case 16:
+    //     useful_symbols = 26;
+    //     sampleRate = 3264000;
+    //     break;
+    // case 32:
+    //     useful_symbols = 27;
+    //     sampleRate = 3273600;
+    //     break;
+    // }
 
     if (wiringPiSetup() == -1) /* initializes wiringPi setup */
     {
@@ -376,34 +386,35 @@ int main(int argc, char *argv[])
     if (LMS_SetupStream(device, &streamId) != 0)
         error();
 
-    //Initialize data buffers
-    const int sampleCnt = 5000;       //complex samples per buffer
-    liquid_float_complex buffer[sampleCnt/2]; //buffer to hold complex values
-    float receiving_buffer[sampleCnt];
-    unsigned char p[subCarrier];            // subcarrier allocation (null/pilot/data)
+    // //Initialize data buffers
+    liquid_float_complex buffer[Csamp_per_sym];    //buffer to hold complex values
+    float receiving_buffer[2 * Csamp_per_sym];
+    unsigned int sym_out;
+    // unsigned char p[subCarrier];            // subcarrier allocation (null/pilot/data)
 
-    //subcarrier allocation
-    for (int i = 0; i < 1024; i++)
-    {
-        if (i < 232)
-            p[i] = 0; //guard band
+    // //subcarrier allocation
+    // for (int i = 0; i < 1024; i++)
+    // {
+    //     if (i < 232)
+    //         p[i] = 0; //guard band
 
-        if (231 < i && i < 792)
-            if (i % 7 == 0)
-                p[i] = 1; //every 7th carrier pilot
-            else
-                p[i] = 2; //rest data
+    //     if (231 < i && i < 792)
+    //         if (i % 7 == 0)
+    //             p[i] = 1; //every 7th carrier pilot
+    //         else
+    //             p[i] = 2; //rest data
 
-        if (i > 791)
-            p[i] = 0; //guard band
-    }
+    //     if (i > 791)
+    //         p[i] = 0; //guard band
+    // }
 
-    // define frame parameters
-    unsigned int cp_len = (int)subCarrier / cycl_pref; // cyclic prefix length for 1/4 case
-    unsigned int taper_len = (int)cp_len / 4;          // taper length for 1/4 case
+    // // define frame parameters
+    // unsigned int cp_len = (int)subCarrier / cycl_pref; // cyclic prefix length for 1/4 case
+    // unsigned int taper_len = (int)cp_len / 4;          // taper length for 1/4 case
 
-    // create frame synchronizers
-    ofdmflexframesync fs = ofdmflexframesync_create(subCarrier, cp_len, taper_len, p, mycallback, NULL);
+    // // create frame synchronizers
+    // ofdmflexframesync fs = ofdmflexframesync_create(subCarrier, cp_len, taper_len, p, mycallback, NULL);
+    fskdem dem = fskdem_create(bits_per_sym,Csamp_per_sym,bandwidth);
 
     //Start streaming
     LMS_StartStream(&streamId);
@@ -411,20 +422,44 @@ int main(int argc, char *argv[])
     //Streaming
     auto t1 = chrono::high_resolution_clock::now();
     auto t2 = t1;
+
+    unsigned int cnt=0;
+    uint16_t rec_cnt=0;
+
+    uint8_t pattern[]  =   {0x7E,0x01,0x02,0x04,0x08,0x10,0x20,0x7E};
+
     //Start streaming
     while (chrono::high_resolution_clock::now() - t1 < chrono::seconds(duration)) //run for 10 seconds
     {
         //Receive samples
-        int samplesRead = LMS_RecvStream(&streamId, receiving_buffer, sampleCnt, NULL, 1000);
+        int samplesRead = LMS_RecvStream(&streamId, receiving_buffer, Csamp_per_sym, NULL, 1000);
         //I and Q samples are interleaved in buffer: IQIQIQ...
 
-        for (int i = 0; i < sampleCnt/2; i++)
+        for (int i = 0; i < Csamp_per_sym; i++)
         {
-            buffer[i]=receiving_buffer[2*i]+j*receiving_buffer[2*i+1];
+            buffer[i]=receiving_buffer[2*i]+complex_i*receiving_buffer[2*i+1];
         }
 
-        // receive symbol (read samples from buffer)
-        ofdmflexframesync_execute(fs, buffer, sampleCnt/2);
+        // // receive symbol (read samples from buffer)
+        // ofdmflexframesync_execute(fs, buffer, sampleCnt);
+        
+        sym_out = fskdem_demodulate(dem, buffer);
+        
+        // cout << "received symbol: " << sym_out << endl;
+
+        if (sym_out==pattern[cnt%8])
+        {
+            cnt++;
+            if (cnt == 8)
+            {
+                msg << "Transmissions recognized: " << ++rec_cnt << endl;
+                Logger(msg.str());
+                cout << "Transmissions recognized: " << rec_cnt << endl;
+                cnt=0;  
+            }
+        }
+        else
+            cnt = 0;
 
         //Print data rate (once per second#)
         if (chrono::high_resolution_clock::now() - t2 > chrono::seconds(5))
@@ -436,19 +471,19 @@ int main(int argc, char *argv[])
         }
     }
 
-    for (int i = 0; i < 2*sampleCnt; i++)
-    {
-        msg.str("");
-        msg << "receiving buffer " << i << ":  " << receiving_buffer[i];
-        Logger(msg.str());
-    }
+    // for (int i = 0; i < 2*sampleCnt; i++)
+    // {
+    //     msg.str("");
+    //     msg << "receiving buffer " << i << ":  " << receiving_buffer[i];
+    //     Logger(msg.str());
+    // }
 
-    for (int i = 0; i < sampleCnt; i++)
-    {
-        msg.str("");
-        msg << "buffer " << i << ":  " << buffer[i];
-        Logger(msg.str());
-    }
+    // for (int i = 0; i < sampleCnt; i++)
+    // {
+    //     msg.str("");
+    //     msg << "buffer " << i << ":  " << buffer[i];
+    //     Logger(msg.str());
+    // }
 
     sleep(1);
 
